@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>鍛樺伐鏁版嵁 AI 鏌ヨ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f0f2f5;
+  --surface:#fff;
+  --primary:#4f6ef7;
+  --primary-light:#eef0ff;
+  --text:#1a1a2e;
+  --text2:#6b7280;
+  --border:#e5e7eb;
+  --radius:12px;
+  --shadow:0 2px 12px rgba(0,0,0,.08);
+  --green:#10b981;
+  --orange:#f59e0b;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column}
+.header{background:var(--surface);padding:16px 20px;border-bottom:1px solid var(--border);text-align:center;flex-shrink:0}
+.header h1{font-size:18px;font-weight:600}
+.header p{font-size:13px;color:var(--text2);margin-top:2px}
+.chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+.chat-area:empty::after{content:'杈撳叆浣犳兂鏌ヨ鐨勫憳宸ユ暟鎹紝姣斿锛歕A\A鈥?缁熻鍚勯儴闂ㄤ汉鏁板垎甯僜A鈥?30宀佷互涓婂憳宸ユ湁澶氬皯浜篭A鈥?鎸夋€у埆缁熻骞冲潎骞撮緞\A鈥?鍒楀嚭鎵€鏈夐儴闂ㄧ粡鐞哱A鈥?瀛﹀巻涓烘湰绉戠殑鍛樺伐鍗犳瘮';white-space:pre;color:var(--text2);font-size:14px;text-align:center;margin:auto;line-height:1.8}
+.msg{max-width:92%;animation:fadeIn .3s ease}
+.msg.user{margin-left:auto}
+.msg.bot{margin-right:auto;width:100%}
+.msg-bubble{background:var(--surface);padding:14px 16px;border-radius:var(--radius);box-shadow:var(--shadow);line-height:1.6;font-size:14px}
+.msg.user .msg-bubble{background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+.msg.bot .msg-bubble{border-bottom-left-radius:4px}
+.msg.user .msg-text{white-space:pre-wrap}
+.msg.bot .msg-text{white-space:pre-wrap}
+.msg.bot .msg-label{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.sql-block{background:#1e293b;color:#e2e8f0;padding:10px 14px;border-radius:8px;font-family:"Cascadia Code","Fira Code",monospace;font-size:12px;margin:8px 0;overflow-x:auto;white-space:pre}
+.data-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;overflow-x:auto;display:block}
+.data-table th,.data-table td{border:1px solid var(--border);padding:6px 10px;text-align:left;white-space:nowrap}
+.data-table th{background:var(--primary-light);color:var(--primary);font-weight:600;position:sticky;top:0}
+.data-table td{background:var(--surface)}
+.row-count{font-size:12px;color:var(--text2);margin:4px 0 8px}
+.analysis-box{background:#f8fafc;border-left:3px solid var(--primary);padding:10px 14px;border-radius:0 8px 8px 0;margin:8px 0;font-size:14px;line-height:1.7}
+.chart-box{width:100%;max-width:500px;margin:8px auto;position:relative}
+.input-area{background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;display:flex;gap:10px;align-items:flex-end}
+.input-area textarea{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px;font-family:inherit;resize:none;outline:none;max-height:120px;line-height:1.5;transition:border-color .2s}
+.input-area textarea:focus{border-color:var(--primary)}
+.input-area button{background:var(--primary);color:#fff;border:none;border-radius:10px;width:46px;height:46px;font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity .2s}
+.input-area button:disabled{opacity:.5;cursor:not-allowed}
+.loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;padding:8px 0}
+.loading .dot{width:6px;height:6px;background:var(--text2);border-radius:50%;animation:bounce 1.4s infinite ease-in-out both}
+.loading .dot:nth-child(2){animation-delay:.16s}
+.loading .dot:nth-child(3){animation-delay:.32s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+@media(max-width:600px){
+  .chat-area{padding:12px}
+  .msg{max-width:100%}
+  .data-table{font-size:12px}
+  .data-table th,.data-table td{padding:4px 6px}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>馃搳 鍛樺伐鏁版嵁 AI 鏌ヨ</h1>
+  <p>杈撳叆鑷劧璇█锛岃嚜鍔ㄦ煡鏁版嵁鍑哄垎鏋?/p>
+</div>
+
+<div class="chat-area" id="chatArea"></div>
+
+<div class="input-area">
+  <textarea id="inputBox" rows="1" placeholder="杈撳叆浣犳兂鏌ヨ鐨勫憳宸ユ暟鎹?.." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+  <button id="sendBtn" onclick="send()">鉃?/button>
+</div>
+
+<script>
+let chartInstances = {};
+let chatHistory = [];
+
+function addMsg(role, html) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = html;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showLoading() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.id = 'loadingMsg';
+  div.innerHTML = '<div class="msg-bubble"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> AI 姝ｅ湪鍒嗘瀽...</div></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function hideLoading() {
+  const el = document.getElementById('loadingMsg');
+  if (el) el.remove();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function guessChartType(columns, data) {
+  if (data.length === 0) return null;
+  const numericCols = columns.filter(c => typeof data[0][c] === 'number');
+  const textCols = columns.filter(c => typeof data[0][c] !== 'number');
+  if (textCols.length > 0 && numericCols.length > 0) return 'bar';
+  return null;
+}
+
+function renderChart(canvasId, columns, data) {
+  const chartType = guessChartType(columns, data);
+  if (!chartType) return;
+
+  const textCol = columns.find(c => typeof data[0][c] !== 'number');
+  const numCol = columns.find(c => typeof data[0][c] === 'number');
+  if (!textCol || !numCol) return;
+
+  const labels = data.slice(0, 20).map(r => r[textCol]);
+  const values = data.slice(0, 20).map(r => r[numCol]);
+
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  chartInstances[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: numCol,
+        data: values,
+        backgroundColor: 'rgba(79,110,247,.7)',
+        borderColor: 'rgba(79,110,247,1)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.06)' } },
+        x: { grid: { display: false }, ticks: { maxRotation: 45 } }
+      }
+    }
+  });
+}
+
+function buildResultHTML(result) {
+  let html = '<div class="msg-bubble">';
+
+  // SQL
+  html += `<div class="msg-label">馃攳 鐢熸垚鐨?SQL</div><div class="sql-block">${escapeHtml(result.sql)}</div>`;
+
+  // 琛屾暟
+  html += `<div class="row-count">鍏?${result.row_count} 鏉＄粨鏋?/div>`;
+
+  // 鍥捐〃鍙橀噺锛堟彁鍓嶅０鏄庯紝閬垮厤 scope 闂锛?  let chartId = null;
+  let chartType = null;
+
+  // 琛ㄦ牸
+  if (result.data.length > 0) {
+    html += '<table class="data-table"><thead><tr>';
+    result.columns.forEach(c => { html += `<th>${escapeHtml(c)}</th>`; });
+    html += '</tr></thead><tbody>';
+    const rows = result.data.slice(0, 50);
+    rows.forEach(r => {
+      html += '<tr>';
+      result.columns.forEach(c => {
+        let val = r[c];
+        if (val === null || val === undefined) val = '-';
+        html += `<td>${escapeHtml(String(val))}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    // 鍥捐〃
+    chartId = 'chart_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    chartType = guessChartType(result.columns, result.data);
+    if (chartType) {
+      html += `<div class="chart-box"><canvas id="${chartId}"></canvas></div>`;
+    }
+  }
+
+  // 鍒嗘瀽
+  if (result.analysis) {
+    html += `<div class="msg-label">馃搱 AI 鍒嗘瀽</div><div class="analysis-box">${result.analysis}</div>`;
+  }
+
+  html += '</div>';
+  return { html, chartId: chartType ? chartId : null };
+}
+
+async function send() {
+  const input = document.getElementById('inputBox');
+  const btn = document.getElementById('sendBtn');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  btn.disabled = true;
+
+  addMsg('user', `<div class="msg-bubble"><div class="msg-text">${escapeHtml(text)}</div></div>`);
+  chatHistory.push({role: 'user', content: text});
+  showLoading();
+
+  try {
+    const resp = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, history: chatHistory.slice(-6) })
+    });
+    const result = await resp.json();
+
+    hideLoading();
+
+    if (result.error) {
+      addMsg('bot', `<div class="msg-bubble"><div class="msg-label">鉂?鍑洪敊</div>${escapeHtml(result.error)}</div>`);
+    } else {
+      const { html, chartId } = buildResultHTML(result);
+      addMsg('bot', html);
+      chatHistory.push({role: 'assistant', content: 'SQL鏌ヨ瀹屾垚锛岃繑鍥炰簡' + result.row_count + '鏉＄粨鏋?});
+      // 娓叉煋鍥捐〃锛圖OM 鏇存柊鍚庯級
+      if (chartId) {
+        setTimeout(() => renderChart(chartId, result.columns, result.data), 100);
+      }
+    }
+  } catch (e) {
+    hideLoading();
+    addMsg('bot', `<div class="msg-bubble"><div class="msg-label">鉂?缃戠粶閿欒</div>${escapeHtml(e.message)}</div>`);
+  }
+
+  btn.disabled = false;
+  input.focus();
+}
+
+// 鑷姩璋冩暣鏂囨湰妗嗛珮搴?document.getElementById('inputBox').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+</script>
+</body>
+</html>
