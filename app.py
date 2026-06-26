@@ -11,7 +11,7 @@ from pathlib import Path
 try:
     from dotenv import load_dotenv
     env_path = Path(__file__).parent / ".env"
-    load_dotenv(dotenv_path=env_path)
+    load_dotenv(dotenv_path=env_path, override=True)
 except ImportError:
     pass
 
@@ -26,11 +26,11 @@ client = OpenAI(
 
 # MySQL 配置（请修改为你自己的数据库连接）
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 3306,
-    "user": "root",
-    "password": "your-password",
-    "database": "my_ai",
+    "host": os.environ.get("DB_HOST") or "localhost",
+    "port": int(os.environ.get("DB_PORT") or 3306),
+    "user": os.environ.get("DB_USER") or "root",
+    "password": os.environ.get("DB_PASSWORD") or "your-password",
+    "database": os.environ.get("DB_NAME") or "my_ai",
     "charset": "utf8mb4"
 }
 
@@ -211,4 +211,4 @@ def handle_query():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8081)
