@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>鍛樺伐鏁版嵁 AI 鏌ヨ</title>
+<title>员工数据 AI 查询</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -25,7 +25,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .header h1{font-size:18px;font-weight:600}
 .header p{font-size:13px;color:var(--text2);margin-top:2px}
 .chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-.chat-area:empty::after{content:'杈撳叆浣犳兂鏌ヨ鐨勫憳宸ユ暟鎹紝姣斿锛歕A\A鈥?缁熻鍚勯儴闂ㄤ汉鏁板垎甯僜A鈥?30宀佷互涓婂憳宸ユ湁澶氬皯浜篭A鈥?鎸夋€у埆缁熻骞冲潎骞撮緞\A鈥?鍒楀嚭鎵€鏈夐儴闂ㄧ粡鐞哱A鈥?瀛﹀巻涓烘湰绉戠殑鍛樺伐鍗犳瘮';white-space:pre;color:var(--text2);font-size:14px;text-align:center;margin:auto;line-height:1.8}
+.chat-area:empty::after{content:'输入你想查询的员工数据，比如：\A\A• 统计各部门人数分布\A• 30岁以上员工有多少人\A• 按性别统计平均年龄\A• 列出所有部门经理\A• 学历为本科的员工占比';white-space:pre;color:var(--text2);font-size:14px;text-align:center;margin:auto;line-height:1.8}
 .msg{max-width:92%;animation:fadeIn .3s ease}
 .msg.user{margin-left:auto}
 .msg.bot{margin-right:auto;width:100%}
@@ -64,15 +64,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 </head>
 <body>
 <div class="header">
-  <h1>馃搳 鍛樺伐鏁版嵁 AI 鏌ヨ</h1>
-  <p>杈撳叆鑷劧璇█锛岃嚜鍔ㄦ煡鏁版嵁鍑哄垎鏋?/p>
+  <h1>📊 员工数据 AI 查询</h1>
+  <p>输入自然语言，自动查数据出分析</p>
 </div>
 
 <div class="chat-area" id="chatArea"></div>
 
 <div class="input-area">
-  <textarea id="inputBox" rows="1" placeholder="杈撳叆浣犳兂鏌ヨ鐨勫憳宸ユ暟鎹?.." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
-  <button id="sendBtn" onclick="send()">鉃?/button>
+  <textarea id="inputBox" rows="1" placeholder="输入你想查询的员工数据..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+  <button id="sendBtn" onclick="send()">➤</button>
 </div>
 
 <script>
@@ -93,7 +93,7 @@ function showLoading() {
   const div = document.createElement('div');
   div.className = 'msg bot';
   div.id = 'loadingMsg';
-  div.innerHTML = '<div class="msg-bubble"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> AI 姝ｅ湪鍒嗘瀽...</div></div>';
+  div.innerHTML = '<div class="msg-bubble"><div class="loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span> AI 正在分析...</div></div>';
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
 }
@@ -160,15 +160,16 @@ function buildResultHTML(result) {
   let html = '<div class="msg-bubble">';
 
   // SQL
-  html += `<div class="msg-label">馃攳 鐢熸垚鐨?SQL</div><div class="sql-block">${escapeHtml(result.sql)}</div>`;
+  html += `<div class="msg-label">🔍 生成的 SQL</div><div class="sql-block">${escapeHtml(result.sql)}</div>`;
 
-  // 琛屾暟
-  html += `<div class="row-count">鍏?${result.row_count} 鏉＄粨鏋?/div>`;
+  // 行数
+  html += `<div class="row-count">共 ${result.row_count} 条结果</div>`;
 
-  // 鍥捐〃鍙橀噺锛堟彁鍓嶅０鏄庯紝閬垮厤 scope 闂锛?  let chartId = null;
+  // 图表变量（提前声明，避免 scope 问题）
+  let chartId = null;
   let chartType = null;
 
-  // 琛ㄦ牸
+  // 表格
   if (result.data.length > 0) {
     html += '<table class="data-table"><thead><tr>';
     result.columns.forEach(c => { html += `<th>${escapeHtml(c)}</th>`; });
@@ -185,7 +186,7 @@ function buildResultHTML(result) {
     });
     html += '</tbody></table>';
 
-    // 鍥捐〃
+    // 图表
     chartId = 'chart_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
     chartType = guessChartType(result.columns, result.data);
     if (chartType) {
@@ -193,9 +194,9 @@ function buildResultHTML(result) {
     }
   }
 
-  // 鍒嗘瀽
+  // 分析
   if (result.analysis) {
-    html += `<div class="msg-label">馃搱 AI 鍒嗘瀽</div><div class="analysis-box">${result.analysis}</div>`;
+    html += `<div class="msg-label">📈 AI 分析</div><div class="analysis-box">${result.analysis}</div>`;
   }
 
   html += '</div>';
@@ -227,26 +228,27 @@ async function send() {
     hideLoading();
 
     if (result.error) {
-      addMsg('bot', `<div class="msg-bubble"><div class="msg-label">鉂?鍑洪敊</div>${escapeHtml(result.error)}</div>`);
+      addMsg('bot', `<div class="msg-bubble"><div class="msg-label">❌ 出错</div>${escapeHtml(result.error)}</div>`);
     } else {
       const { html, chartId } = buildResultHTML(result);
       addMsg('bot', html);
-      chatHistory.push({role: 'assistant', content: 'SQL鏌ヨ瀹屾垚锛岃繑鍥炰簡' + result.row_count + '鏉＄粨鏋?});
-      // 娓叉煋鍥捐〃锛圖OM 鏇存柊鍚庯級
+      chatHistory.push({role: 'assistant', content: 'SQL查询完成，返回了' + result.row_count + '条结果'});
+      // 渲染图表（DOM 更新后）
       if (chartId) {
         setTimeout(() => renderChart(chartId, result.columns, result.data), 100);
       }
     }
   } catch (e) {
     hideLoading();
-    addMsg('bot', `<div class="msg-bubble"><div class="msg-label">鉂?缃戠粶閿欒</div>${escapeHtml(e.message)}</div>`);
+    addMsg('bot', `<div class="msg-bubble"><div class="msg-label">❌ 网络错误</div>${escapeHtml(e.message)}</div>`);
   }
 
   btn.disabled = false;
   input.focus();
 }
 
-// 鑷姩璋冩暣鏂囨湰妗嗛珮搴?document.getElementById('inputBox').addEventListener('input', function() {
+// 自动调整文本框高度
+document.getElementById('inputBox').addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
