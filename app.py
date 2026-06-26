@@ -5,11 +5,13 @@ import pandas as pd
 import traceback
 import json
 import os
+from pathlib import Path
 
 # 从 .env 文件加载配置
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    env_path = Path(__file__).parent / ".env"
+    load_dotenv(dotenv_path=env_path)
 except ImportError:
     pass
 
