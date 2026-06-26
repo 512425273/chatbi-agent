@@ -6,6 +6,13 @@ import traceback
 import json
 import os
 
+# 从 .env 文件加载配置
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 app = Flask(__name__)
 
 # DeepSeek 配置（请填入你的 DeepSeek API Key）
